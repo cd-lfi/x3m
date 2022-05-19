@@ -86,6 +86,14 @@ aws s3 cp s3://lfi-algo-data-us-west-2/runs/deeplearning_20220517_082001/fiftyon
             x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
             # `reshape` on cpu / use `split`
             x[i] = [xi.permute(0, 2, 3, 1).contiguous() for xi in torch.split(x[i], self.no, dim=1)][0]
+
+            x[i] = self.m[i](x[i])  # conv
+            bs, _, ny, nx = x[i].shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
+            x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+
+            # x(bs,255,20,20) to [xi(bs,no,20,20),xi(bs,no,20,20),xi(bs,no,20,20)]
+            x[i] = [xi for xi in torch.split(x[i], self.no, dim=1)]
+            # drop reshape/view
 ```
 
 
