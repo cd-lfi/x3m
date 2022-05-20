@@ -76,6 +76,7 @@ def parse_opt():
     parser.add_argument('src', type=str, help='dataset root dir')
     parser.add_argument('dst', type=str, help='output root dir')
     parser.add_argument('--imgsz', type=str, default='640x640')
+    parser.add_argument('--channel', type=str, default='first')
     parser.add_argument('--ext', type=str, default='.rgb')
     opt = parser.parse_args()
     return opt
@@ -87,6 +88,9 @@ def main(opt):
 
     imgsz = tuple(int(x) for x in opt.imgsz.split("x"))
     assert len(imgsz) == 2, "format: HxW"
+
+    channel_first = opt.channel.lower() == 'first'
+
     file_ext = opt.ext
 
     shutil.rmtree(out_dir, ignore_errors=True)
@@ -99,7 +103,7 @@ def main(opt):
     transformers = [
         PadResizeTransformer(imgsz),
         BGR2RGBTransformer(),
-        HWC2CHWTransformer(),
+        HWC2CHWTransformer() if channel_first else Transformer(),
     ]
 
     for img_path in sorted(imgs):

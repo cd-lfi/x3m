@@ -11,7 +11,7 @@ core_num=${5:-1}
 
 working_dir="tmp/makert_$(basename ${onnx_model} .onnx)"
 file_prefix="out_${input_shape}_${input_type_rt}"
-config_file="${working_dir}/config.yaml"
+config_file="./config.yaml"
 
 
 rm -rf ${working_dir} && mkdir -p ${working_dir}
@@ -42,7 +42,7 @@ input_parameters:
 calibration_parameters:
   cal_data_dir: './calibration_data_rgb_f32'
   calibration_type: 'load'
-  max_percentile: '0.99999'
+  max_percentile: 0.99999
   per_channel: False
 
 compiler_parameters:

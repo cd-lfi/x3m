@@ -48,3 +48,7 @@ __pycache__
 # Outputs
 results
 tmp
+
+# hb_mapper
+.hb_check
+*.log

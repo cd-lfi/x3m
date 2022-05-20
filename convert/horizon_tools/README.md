@@ -1,3 +1,15 @@
+- [高性能模型设计建议](https://developer.horizon.ai/api/v1/fileData/documents/ai_toolchain_develop/horizon_ai_toolchain_user_guide/chapter_3_model_conversion.html#id17)
+- [在开发板上评测模型的推理性能](https://developer.horizon.ai/api/v1/fileData/hrt_model_exec/index.html)
+- [量化工具链使用说明 » 模型转换](https://developer.horizon.ai/api/v1/fileData/documents/ai_toolchain_develop/horizon_ai_toolchain_user_guide/chapter_3_model_conversion.html)
+
+## data
+`./calibration_data_rgb_f32` build with:
+```sh
+# work on: convert/horizon_tools/
+                     src_dir                          dst_dir                          HxW               NCHW/NHWC
+python preprocess.py coco2017_cat_dog/validation/data calibration_data_rgb_f32 --imgsz 640x640 --channel first
+```
+
 ## docker
 ```sh
 docker pull openexplorer/ai_toolchain_centos_7_xj3:v2.0.4
@@ -8,45 +20,55 @@ IMAGE=openexplorer/ai_toolchain_centos_7_xj3:v2.0.4 && \
 docker run -it --rm --network=host --ipc=host -v "$(pwd)":/workspace ${IMAGE} bash
 
 # src
-src_path=/workspace/x3m
-
-# todo
-cd /workspace && \
-rm -rf ${src_path} && mkdir -p ${src_path} && cd ${src_path} && \
-git clone -q --depth 1 https://github.com/cd-lfi/x3m.git .
-
-# yolov5: lite2
-model_type=onnx
-march=bernoulli2
-onnx_model=/workspace/models/yolov5_lite/yolov5m_relu_sigmoid_fast_nc_15.onnx
-input_node=images
-input_shape=1x3x640x640
-output=log.checker
-hb_mapper checker --model-type ${model_type} \
-                  --march ${march} \
-                  --model ${onnx_model} \
-                  --input-shape ${input_node} ${input_shape} \
-                  --output ${output}
-
-# horizon.ai: model_zoo/mapper/detection/yolov5_onnx_optimized
-model_type=onnx
-march=bernoulli2
-onnx_model=/workspace/models/yolov5_onnx_optimized/YOLOv5l.onnx
-input_node=data
-input_shape=1x3x672x672
-output=log.checker
-hb_mapper checker --model-type ${model_type} \
-                  --march ${march} \
-                  --model ${onnx_model} \
-                  --input-shape ${input_node} ${input_shape} \
-                  --output ${output}
-
-# yolov5: lite2
-hb_mapper makertbin --config ${config_file}  \
-                    --model-type  ${model_type}
+git clone -q --depth 1 https://github.com/cd-lfi/x3m.git
 ```
 
-## YOLOv5 - lite
+### onnx check
+```sh
+# yolov5: lite
+onnx_model=/workspace/models/yolov5m_relu_sigmoid_fast_nc_15.onnx && \
+input_node=images && \
+input_shape=1x3x640x640 && \
+bash onnx_check.sh ${onnx_model} ${input_node} ${input_shape}
+
+# horizon.ai: model_zoo/mapper/detection/yolov5_onnx_optimized
+onnx_model=/workspace/models/yolov5_onnx_optimized/YOLOv5l.onnx && \
+input_node=data && \
+input_shape=1x3x672x672 && \
+bash onnx_check.sh ${onnx_model} ${input_node} ${input_shape}
+```
+
+### onnx makert
+```sh
+onnx_model=/workspace/models/yolov5_onnx_optimized/YOLOv5l.onnx && \
+input_name=images && \
+input_shape=640x640 && \
+input_type_rt=nv12 && \
+core_num=1 && \
+bash onnx_makert_f32.sh ${onnx_model} ${input_name} ${input_shape} ${input_type_rt} ${core_num}
+```
+
+## board
+https://developer.horizon.ai/api/v1/fileData/hrt_model_exec/index.html
+```sh
+# X3M_SDK_UBUNTU/ai_toolchain_package/
+# - v2.0.4/ai_toolchain/hrt_tools/
+chmod +x hrt_model_exec
+
+hrt_model_exec -v
+
+model=models/yolov5_672x672_nv12.bin
+
+hrt_model_exec model_info --model_file=${model}
+
+# separate by comma, each represents one input.
+hrt_model_exec infer --model_file=${model} --input_file=test.jpg
+
+# core id, 0 for any core, 1 for core 0, 2 for core 1.
+hrt_model_exec perf --model_file=${model} -core_id 1 --profile_path='.'
+```
+
+## YOLOv5
 ```sh
 docker pull flystarhe/yolov5:6.1-torch1.10-cuda11.3
 
@@ -59,47 +81,11 @@ docker run --gpus all -d --network=host --ipc=host --name yolov5 -v "$(pwd)":/wo
 docker exec -it yolov5 bash
 
 # src
-src_path=/workspace/yolov5
-
-# prepare
-cd /workspace && \
-rm -rf ${src_path} && mkdir -p ${src_path} && cd ${src_path} && \
-git clone -q -b lite2 --depth 1 https://github.com/cd-lfi/yolov5.git . && \
+git clone -q -b clip --depth 1 https://github.com/cd-lfi/yolov5.git
 pip install onnx onnx-simplifier onnxruntime-gpu
 
 # export onnx
-cd ${src_path} && \
-weights=/workspace/models/yolov5_lite/yolov5m_relu_sigmoid_fast_nc_15.pt && \
-python export.py --weights ${weights} --img 640 --opset 11 --include onnx --train
-# /workspace/models/yolov5_lite/yolov5m_relu_sigmoid_fast_nc_15.onnx
-
-# deeplearning results
-aws s3 cp s3://lfi-algo-data-us-west-2/runs/deeplearning_20220517_082001 deeplearning_20220517_082001 --no-progress --recursive
-# last.pt
-aws s3 cp s3://lfi-algo-data-us-west-2/runs/deeplearning_20220517_082001/fiftyone_coco_nc_15/yolov5m_relu_sigmoid_fast/weights/last.pt \
-    yolov5_lite/yolov5m_relu_sigmoid_fast_nc_15.pt
-```
-
-`Detect()`
-```sh
-            bs, _, ny, nx = x[i].shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
-            x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
-            # `reshape` on cpu / use `split`
-            x[i] = [xi.permute(0, 2, 3, 1).contiguous() for xi in torch.split(x[i], self.no, dim=1)][0]
-
-            x[i] = self.m[i](x[i])  # conv
-            bs, _, ny, nx = x[i].shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
-            x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
-
-            # x(bs,255,20,20) to [xi(bs,no,20,20),xi(bs,no,20,20),xi(bs,no,20,20)]
-            x[i] = [xi for xi in torch.split(x[i], self.no, dim=1)]
-            # drop reshape/view
-```
-
-
-```python
-import wandb
-run = wandb.init()
-artifact = run.use_artifact('flystarhe/fiftyone_coco_nc_15/run_37xbidin_model:v29', type='model')
-artifact_dir = artifact.download()
+weights=/workspace/models/yolov5m_relu_sigmoid_fast_nc_15.pt
+python export.py --weights ${weights} --img 640 --opset 11 --include onnx
+# /workspace/models/yolov5m_relu_sigmoid_fast_nc_15.onnx
 ```
