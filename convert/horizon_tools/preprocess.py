@@ -85,7 +85,7 @@ def main(opt):
     in_dir = Path(opt.src)
     out_dir = Path(opt.dst)
 
-    imgsz = (int(x) for x in opt.imgsz.split("x"))
+    imgsz = tuple(int(x) for x in opt.imgsz.split("x"))
     assert len(imgsz) == 2, "format: HxW"
     file_ext = opt.ext
 
@@ -102,8 +102,8 @@ def main(opt):
         HWC2CHWTransformer(),
     ]
 
-    for num, img_path in enumerate(sorted(imgs), 1):
-        out_path = out_dir / f"ndarray_{num:04d}{file_ext}"
+    for img_path in sorted(imgs):
+        out_path = out_dir / f"{img_path.stem}{file_ext}"
         regular_preprocess(img_path, out_path, transformers, dtype)
 
     print(opt)
