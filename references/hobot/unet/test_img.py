@@ -25,7 +25,7 @@ def bgr2nv12_opencv(image):
     return nv12
 
 
-def main_bgr():
+def main_bgr(resize=False):
     # 单输入NV12模型
     models = dnn.load("./mobilenet_unet_1024x2048_nv12.bin")
     # 获取模型输入信息
@@ -33,7 +33,14 @@ def main_bgr():
     input_dtype = models[0].inputs[0].properties.dtype
     # 构造模型NV12输入数据 (h*1.5,w)
     bgr = cv.imread("./test.jpg", 1)
-    resized_data = cv.resize(bgr, (2048, 1024), interpolation=cv.INTER_AREA)
+    if resize:
+        resized_data = cv.resize(
+            bgr, (2048, 1024), interpolation=cv.INTER_AREA)
+    else:
+        resized_data = np.zeros((1024, 2048, 3), dtype=input_dtype)
+        bgr = bgr[:1024, :2048]
+        h, w, _ = bgr.shape
+        resized_data[:h, :w] = bgr
     tensor = bgr2nv12_opencv(resized_data)
     outputs = models[0].forward(tensor)
     # 获取模型输出数据，类型为numpy数据
