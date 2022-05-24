@@ -4,7 +4,9 @@ import traceback
 import cv2 as cv
 import numpy as np
 from hobot_dnn import pyeasy_dnn as dnn
-from hobot_vio import libsrcampy as srcampy
+# from hobot_vio import libsrcampy as srcampy
+sys.path.append('/usr/lib/hobot-srcampy')
+import libsrcampy as srcampy
 
 
 def print_properties(pro):
