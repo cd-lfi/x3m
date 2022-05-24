@@ -37,6 +37,7 @@ def main_nv12():
     # 获取模型输出数据，类型为numpy数据
     output_buffer = outputs[0].buffer
     print(f"{output_buffer.shape=}")
+    # ndarray.tofile('1.npy')
     return output_buffer
 
 
