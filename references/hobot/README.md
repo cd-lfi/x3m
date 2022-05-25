@@ -2,7 +2,6 @@
 本目录的示例运行在板端(X3M)。当你的板端镜像比较旧时：
 ```python
 import sys
-
 sys.path.append('/usr/lib/hobot-srcampy')
 ```
 
@@ -14,11 +13,13 @@ import cv2 as cv
 import numpy as np
 from hobot_dnn import pyeasy_dnn as dnn
 # from hobot_vio import libsrcampy as srcampy
+import sys
 sys.path.append('/usr/lib/hobot-srcampy')
 import libsrcampy as srcampy
 
 cam = srcampy.Camera()
 width, height = 1920, 1080
+# 打开 F37, 初始化视频 pipeline 0, 设置帧率30fps, 缩放图像为 WxH
 cam.open_cam(0, 1, 30, width, height)
 
 # nv12格式的图像数据 - 参数 2 代表从硬件模块IPU中获取
