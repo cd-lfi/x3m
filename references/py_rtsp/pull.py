@@ -84,7 +84,6 @@ if __name__ == "__main__":
     import sys
     task = sys.argv[1]
     rtsp_url = "rtsp://localhost:8554/video"
-    rtsp_url = "rtsp://192.168.0.114/stream_chn0.h264"
 
     if task == "rtsp":
         pull_rtsp(rtsp_url, frames=500, keep=True)

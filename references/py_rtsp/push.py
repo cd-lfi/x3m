@@ -5,6 +5,11 @@ import cv2 as cv
 import numpy as np
 
 # conda install -c conda-forge ffmpeg
+# need: https://github.com/topics/rtsp-server
+#   https://github.com/aler9/rtsp-simple-server
+#     1. launch rtsp server: rtsp-simple-server.exe
+#     2. push: `ffmpeg -re -stream_loop -1 -i test.mp4 -c copy -f rtsp rtsp://localhost:8554/mystream`
+#     3. pull: `ffmpeg -i rtsp://localhost:8554/mystream -c copy output.mp4`
 rtsp_url = "rtsp://localhost:8554/video"
 
 
